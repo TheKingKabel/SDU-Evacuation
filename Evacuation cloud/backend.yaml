@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: gcr.io/gc-cloud-project/evac-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+        - name: MONGO_DB_CONNECTION_STRING
+          value: mongodb+srv://abkov21:nagyfos22@cloudcomp.9t2sk3f.mongodb.net/?retryWrites=true&w=majority
+        - name: MONGO_DB_NAME
+          value: CloudComp
+        - name: REDIS_URI
+          value: redis://default:Atp4yjUaDy0NxLfswat8CWtev4ELHUbz@redis-17263.c238.us-central1-2.gce.cloud.redislabs.com:17263
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: backend
+  ports:
+  - protocol: TCP
+    name: backend-service
+    port: 3000
+    targetPort: 3000
+status:
+  loadBalancer: {}
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: 3
+  maxReplicas: 9
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 90
